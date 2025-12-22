@@ -96,7 +96,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: parser-celery-worker
-    command: celery -A src.celery_app worker --loglevel=info --concurrency=4
+    command: celery -A src.celery_app worker --loglevel=info --concurrency=4 -Q parsing
     environment:
       - MONGODB_URL=mongodb://mongodb:27017
       - MONGODB_DB_NAME=parser_db

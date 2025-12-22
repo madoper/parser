@@ -3,6 +3,10 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, HttpUrl
 from typing import List, Optional
+from celery.result import AsyncResult
+
+from src.tasks import parse_sitemap_task
+from src.celery_app import celery_app
 
 # SEMANTIC: Initialize router for sitemap endpoints
 router = APIRouter(prefix="/sitemap", tags=["sitemap"])
@@ -34,21 +38,51 @@ async def parse_sitemap(request: SitemapRequest):
     logger.info("Received request to parse sitemap")
     logger.info(f"Request data: {request}")
     try:
-        task_id = f"task_{id(request)}"
-        logger.info(f"Generated task_id: {task_id}")
+        task = parse_sitemap_task.delay(str(request.url), request.max_depth or 3, request.follow_nested or True)
+        logger.info(f"Started Celery task: {task.id}")
         return SitemapResponse(
-            task_id=task_id,
-            status="started",
+            task_id=task.id,
+            status="pending",
             total_urls=0,
             urls=[]
         )
     except Exception as e:
-        logger.error(f"Error in parse_sitemap: {e}")
+        logger.error(f"Error starting parse task: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/task/{task_id}")
 async def get_task_status(task_id: str):
     """Get parsing task status and results."""
-    # SEMANTIC: Retrieve task status from Redis or database
-    return {"task_id": task_id, "status": "pending"}
+    # SEMANTIC: Retrieve task status from Celery result backend
+    result = AsyncResult(task_id, app=celery_app)
+    if result.state == "PENDING":
+        response = {
+            "task_id": task_id,
+            "status": "pending",
+            "total_urls": 0,
+            "urls": []
+        }
+    elif result.state == "PROGRESS":
+        response = {
+            "task_id": task_id,
+            "status": "progress",
+            "total_urls": result.info.get("total_urls", 0),
+            "urls": result.info.get("urls", [])
+        }
+    elif result.state == "SUCCESS":
+        response = {
+            "task_id": task_id,
+            "status": "completed",
+            "total_urls": len(result.result.get("urls", [])),
+            "urls": result.result.get("urls", [])
+        }
+    else:
+        response = {
+            "task_id": task_id,
+            "status": "failed",
+            "error": str(result.info),
+            "total_urls": 0,
+            "urls": []
+        }
+    return response
