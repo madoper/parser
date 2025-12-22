@@ -24,7 +24,13 @@ async def lifespan(app: FastAPI):
     """SEMANTIC: Application lifecycle management."""
     # SEMANTIC: Startup event - initialize database connections
     logger.info("Starting up application")
-    await connect_to_mongo()
+    try:
+        logger.info("Attempting to connect to MongoDB")
+        await connect_to_mongo()
+        logger.info("Successfully connected to MongoDB")
+    except Exception as e:
+        logger.error(f"Failed to connect to MongoDB: {e}")
+        raise
     yield
     # SEMANTIC: Shutdown event - cleanup resources
     logger.info("Shutting down application")
@@ -55,11 +61,13 @@ def create_app() -> FastAPI:
     )
 
     # SEMANTIC: Include API router with version prefix
+    logger.info("Including API v1 router")
     app.include_router(
         api_v1_router,
         prefix="/api/v1",
         tags=["v1"]
     )
+    logger.info("API v1 router included successfully")
 
     # SEMANTIC: Health check endpoint
     @app.get("/health")

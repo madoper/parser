@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 
 # SEMANTIC: Install dependencies with clean cache
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install --omit=dev && npm cache clean --force
 
 # SEMANTIC: Copy application source
 COPY . .

@@ -25,7 +25,7 @@ FROM python:3.11-slim
 # SEMANTIC: Set environment variables for Python
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PATH=/root/.local/bin:$PATH
+    PATH=/home/parser/.local/bin:$PATH
 
 # SEMANTIC: Create non-root user for security
 RUN useradd -m -u 1000 parser && \
@@ -42,7 +42,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # SEMANTIC: Copy installed dependencies from builder
-COPY --from=builder /root/.local /root/.local
+COPY --chown=parser:parser --from=builder /root/.local /home/parser/.local
 
 # SEMANTIC: Copy application code
 COPY --chown=parser:parser . .

@@ -29,8 +29,13 @@ class SitemapResponse(BaseModel):
 async def parse_sitemap(request: SitemapRequest):
     """Parse sitemap and extract all URLs from sitemap index."""
     # SEMANTIC: Handle sitemap parsing via service
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info("Received request to parse sitemap")
+    logger.info(f"Request data: {request}")
     try:
         task_id = f"task_{id(request)}"
+        logger.info(f"Generated task_id: {task_id}")
         return SitemapResponse(
             task_id=task_id,
             status="started",
@@ -38,6 +43,7 @@ async def parse_sitemap(request: SitemapRequest):
             urls=[]
         )
     except Exception as e:
+        logger.error(f"Error in parse_sitemap: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

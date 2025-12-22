@@ -30,8 +30,9 @@ function App() {
 
     try {
       setLoading(true);
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
       const response = await axios.post(
-        'http://localhost:8000/api/v1/sitemap/parse',
+        `${apiUrl}/api/v1/sitemap/parse`,
         { url: sitemapUrl, max_depth: 3, follow_nested: true }
       );
       
@@ -49,10 +50,11 @@ function App() {
    */
   const checkTaskStatus = async () => {
     if (!taskId) return;
-    
+
     try {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
       const response = await axios.get(
-        `http://localhost:8000/api/v1/sitemap/task/${taskId}`
+        `${apiUrl}/api/v1/sitemap/task/${taskId}`
       );
       setResults(response.data.urls || []);
     } catch (err) {
